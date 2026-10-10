@@ -25,8 +25,11 @@ pnpm build
 ```bash
 pnpm --filter @mapscribe/cli build
 pnpm exec tsx apps/cli/src/index.ts install
+pnpm exec tsx apps/cli/src/index.ts resolve map.json --output resolved.json
 pnpm exec tsx apps/cli/src/index.ts render examples/chengdu.json --output map.png
 ```
+
+`resolve` turns a `sourceQuery` into real geometry. `render` resolves only when geometry is still missing, and it stops when a query is ambiguous or fails.
 
 `install` only downloads Playwright Chromium. `examples/chengdu.json` contains real OpenStreetMap geometry for way `625875294`.
 

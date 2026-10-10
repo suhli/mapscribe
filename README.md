@@ -7,7 +7,7 @@ MapScribe 是一个开源地图编辑与渲染工具。你可以在浏览器里�
 ## 功能
 
 - 平移、缩放、地点搜索、坐标定位、比例尺和数据署名
-- 点选道路、按起终点沿路网生成路段、自由绘制并编辑节点
+- 按地名、道路名、交叉口或路段描述定位，也可以点选道路、沿路网连接起终点、自由绘制并编辑节点
 - 独立设置颜色、线宽、透明度、虚线、端点和描边
 - 地点标签：文字、图标、背景、引导线、拖动和简单避让
 - 图层显示、重命名、排序、复制、删除，以及撤销重做
@@ -47,8 +47,11 @@ pnpm --filter @mapscribe/cli build
 pnpm exec tsx apps/cli/src/index.ts install
 pnpm exec tsx apps/cli/src/index.ts doctor
 pnpm exec tsx apps/cli/src/index.ts validate examples/chengdu.json
+pnpm exec tsx apps/cli/src/index.ts resolve map.json --output resolved.json
 pnpm exec tsx apps/cli/src/index.ts render examples/chengdu.json --output map.png --artifact-dir rendered-map
 ```
+
+`resolve` 把 `sourceQuery` 解析成真实几何。`render` 只在几何还没解析时才会查询地理服务；结果有歧义或失败时退出，不会用猜测坐标出图。已保存的几何要用 `resolve --force` 才会重查。多个候选用重复的 `--select 图层id=候选id`。
 
 `install` 只安装 Playwright Chromium，不修改系统包。`examples/chengdu.json` 使用 OpenStreetMap way `625875294`（成都「西里」）的真实几何。渲染它会请求 OpenFreeMap 瓦片，请遵守其使用政策；批量出图应换成自己的样式地址。
 

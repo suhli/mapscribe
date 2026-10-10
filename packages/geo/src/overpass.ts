@@ -4,7 +4,7 @@ import { distanceToGeometryMeters } from "./coordinates.js";
 import { requestJson } from "./http.js";
 import { DEFAULT_ENDPOINTS } from "./policy.js";
 import { RateLimiter } from "./rate-limit.js";
-import type { FetchLike, ProviderEndpoint, RoadProvider, RoadWay } from "./types.js";
+import { ProviderRequestError, type FetchLike, type ProviderEndpoint, type RoadProvider, type RoadWay } from "./types.js";
 
 interface OverpassGeometry {
   lat: number;
@@ -59,6 +59,35 @@ export class OverpassRoadProvider implements RoadProvider {
     this.cache.set(key, ways, 10 * 60 * 1000);
     return ways;
   }
+
+  async waysByName(name: string, bounds: [number, number, number, number]): Promise<RoadWay[]> {
+    const safe = overpassLiteral(name);
+    const [west, south, east, north] = bounds;
+    const key = `overpass-name:${safe}:${west.toFixed(4)}:${south.toFixed(4)}:${east.toFixed(4)}:${north.toFixed(4)}`;
+    const cached = this.cache.get<RoadWay[]>(key);
+    if (cached) return cached;
+    const box = `${south},${west},${north},${east}`;
+    const query = `[out:json][timeout:20];(way["name"="${safe}"]["highway"](${box});way["name:zh"="${safe}"]["highway"](${box}););out geom tags;`;
+    const body = new URLSearchParams({ data: query });
+    const payload = await this.limiter.schedule(() =>
+      requestJson<OverpassResponse>(this.fetchFn, this.endpoint, this.timeoutMs, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+        body,
+      }),
+    );
+    const ways = parseOverpassWays(payload);
+    this.cache.set(key, ways, 10 * 60 * 1000);
+    return ways;
+  }
+}
+
+function overpassLiteral(value: string): string {
+  const text = value.trim();
+  if (!/^[\p{L}\p{N}\s·.\-—]{1,80}$/u.test(text)) {
+    throw new ProviderRequestError("名称包含无法安全查询的字符");
+  }
+  return text;
 }
 
 export function parseOverpassWays(payload: OverpassResponse): RoadWay[] {
@@ -71,11 +100,15 @@ export function parseOverpassWays(payload: OverpassResponse): RoadWay[] {
       .map((point) => [point.lon, point.lat] as LngLat);
     if (coordinates.length < 2) continue;
     const geometry: LineGeometry = { type: "LineString", coordinates };
+    const layerTag = Number(element.tags?.layer);
     ways.push({
       id: `way/${element.id}`,
-      name: element.tags?.name ?? null,
+      name: element.tags?.name ?? element.tags?.["name:zh"] ?? null,
       highway: element.tags?.highway ?? null,
       geometry,
+      ...(Number.isFinite(layerTag) ? { layer: layerTag } : {}),
+      ...(element.tags?.bridge === "yes" ? { bridge: true } : {}),
+      ...(element.tags?.tunnel === "yes" ? { tunnel: true } : {}),
     });
   }
   return ways;

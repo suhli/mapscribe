@@ -1,4 +1,4 @@
-import type { LabelLayer } from "@mapscribe/core";
+import type { LabelLayer, LngLat } from "@mapscribe/core";
 
 export interface ScreenPoint {
   x: number;
@@ -70,10 +70,13 @@ function placeBox(anchor: ScreenPoint, size: { width: number; height: number }, 
  */
 export function placeLabels(
   labels: LabelLayer[],
-  project: (position: LabelLayer["position"]) => ScreenPoint,
+  project: (position: LngLat) => ScreenPoint,
   measure: MeasureText,
 ): PlacedLabel[] {
-  const visible = labels.filter((label) => label.visible).slice().sort((a, b) => a.zIndex - b.zIndex);
+  const visible = labels
+    .filter((label): label is LabelLayer & { position: LngLat } => label.visible && label.position !== undefined)
+    .slice()
+    .sort((a, b) => a.zIndex - b.zIndex);
   const placed: PlacedLabel[] = [];
   for (const layer of visible) {
     const anchor = project(layer.position);

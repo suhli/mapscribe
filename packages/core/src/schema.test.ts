@@ -60,7 +60,7 @@ describe("parseProject", () => {
     }
     expect(road.style.dash).toBe("solid");
     expect(road.style.width).toBe(8);
-    expect(road.geometry.coordinates).toEqual([
+    expect(road.geometry?.coordinates).toEqual([
       [104.08, 30.65],
       [104.09, 30.66],
     ]);
@@ -69,6 +69,31 @@ describe("parseProject", () => {
     expect(label.style.background).toBe("#ffffff");
     expect(project.output.height).toBe(1440);
     expect(project.output.fit).toBe("view");
+  });
+
+  it("接受只有 sourceQuery、还没有几何的道路图层", () => {
+    const { project } = parseProject({
+      ...createEmptyProject(),
+      layers: [
+        {
+          id: "highlight-1",
+          type: "road-highlight",
+          sourceQuery: {
+            type: "road-segment",
+            location: { city: "成都市" },
+            road: "人民南路",
+            from: { type: "intersection", road: "道路A" },
+            to: { type: "intersection", road: "道路B" },
+          },
+        },
+      ],
+    });
+    const layer = project.layers[0];
+    expect(layer?.type).toBe("road-highlight");
+    if (layer?.type === "road-highlight") {
+      expect(layer.geometry).toBeUndefined();
+      expect(layer.sourceQuery?.type).toBe("road-segment");
+    }
   });
 
   it("拒绝纬度超出范围的坐标", () => {

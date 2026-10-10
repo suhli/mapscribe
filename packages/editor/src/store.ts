@@ -56,6 +56,7 @@ export interface EditorSnapshot {
   canRedo: boolean;
   route: RouteDraft | null;
   roadChoices: RoadChoice[] | null;
+  linePreview: LineGeometry | null;
   notice: string | null;
   busy: boolean;
   saved: boolean;
@@ -78,6 +79,7 @@ export class EditorStore {
   private tool: Tool = "select";
   private route: RouteDraft | null = null;
   private roadChoices: RoadChoice[] | null = null;
+  private linePreview: LineGeometry | null = null;
   private notice: string | null = null;
   private busy = false;
   private saved = true;
@@ -103,6 +105,7 @@ export class EditorStore {
       canRedo: this.future.length > 0,
       route: this.route,
       roadChoices: this.roadChoices,
+      linePreview: this.linePreview,
       notice: this.notice,
       busy: this.busy,
       saved: this.saved,
@@ -205,6 +208,7 @@ export class EditorStore {
     this.selection = null;
     this.route = null;
     this.roadChoices = null;
+    this.linePreview = null;
     this.saved = !options?.record;
     this.emit();
   }
@@ -283,6 +287,15 @@ export class EditorStore {
     }
   }
 
+  replaceLayer(id: string, layer: Layer): void {
+    this.commit((project) => ({
+      ...project,
+      layers: project.layers.map((item) => (item.id === id ? { ...layer, id } : item)),
+    }));
+    this.selection = id;
+    this.emit();
+  }
+
   removeLayer(id: string): void {
     this.commit((project) => ({ ...project, layers: reindex(project.layers.filter((layer) => layer.id !== id)) }));
     if (this.selection === id) this.selection = null;
@@ -296,7 +309,7 @@ export class EditorStore {
     copy.id = createId(source.type === "label" ? "label" : source.type === "freehand" ? "draw" : "road");
     copy.name = `${source.name} 副本`;
     copy.zIndex = source.zIndex + 1;
-    if (copy.type === "label") {
+    if (copy.type === "label" && copy.position) {
       copy.position = [copy.position[0] + 0.0008, copy.position[1] + 0.0008];
       copy.placement = "manual";
     }
@@ -340,6 +353,11 @@ export class EditorStore {
 
   setRoadChoices(choices: RoadChoice[] | null): void {
     this.roadChoices = choices;
+    this.emit();
+  }
+
+  setLinePreview(geometry: LineGeometry | null): void {
+    this.linePreview = geometry;
     this.emit();
   }
 

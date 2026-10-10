@@ -10,6 +10,7 @@
   import Inspector from "$lib/panels/Inspector.svelte";
   import LayerPanel from "$lib/panels/LayerPanel.svelte";
   import MapStage from "$lib/panels/MapStage.svelte";
+  import SemanticLocate from "$lib/panels/SemanticLocate.svelte";
   import StatusBar from "$lib/panels/StatusBar.svelte";
   import Toolbar from "$lib/panels/Toolbar.svelte";
   import { applyTheme, preferences, setLocale, setTheme, t } from "$lib/preferences.svelte";
@@ -27,6 +28,7 @@
   let locateOpen = $state(false);
   let shortcutsOpen = $state(false);
   let confirmOpen = $state(false);
+  let semanticOpen = $state(false);
   let settingsForm = $state<LocalSettings>(defaultSettings());
   let locateForm = $state({ longitude: "104.0658", latitude: "30.6574", zoom: "15" });
   let fileInput = $state<HTMLInputElement | null>(null);
@@ -189,6 +191,7 @@
     onSettings={openSettings}
     onLocate={() => (locateOpen = true)}
     onShortcuts={() => (shortcutsOpen = true)}
+    onSemantic={() => (semanticOpen = true)}
   />
   <div class="flex min-h-0 flex-1">
     {#if layersOpen}
@@ -247,6 +250,8 @@
 </div>
 
 <input bind:this={fileInput} class="hidden" type="file" accept="application/json,.json" onchange={onImportFile} />
+
+<SemanticLocate bind:open={semanticOpen} {controller} />
 
 <Dialog bind:open={exportOpen} title={t("exportTitle")}>
   <div class="grid gap-3 text-sm">

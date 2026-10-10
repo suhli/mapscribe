@@ -1,4 +1,4 @@
-import { isLineLayer, type MapProject } from "@mapscribe/core";
+import { isDrawnLine, isPlacedLabel, type MapProject } from "@mapscribe/core";
 
 export interface GeoFeature {
   type: "Feature";
@@ -20,7 +20,7 @@ export function projectToFeatureCollection(project: MapProject): FeatureCollecti
   const features: GeoFeature[] = [];
   for (const layer of project.layers) {
     if (!layer.visible) continue;
-    if (isLineLayer(layer)) {
+    if (isDrawnLine(layer)) {
       features.push({
         type: "Feature",
         id: layer.id,
@@ -32,7 +32,7 @@ export function projectToFeatureCollection(project: MapProject): FeatureCollecti
         },
         geometry: layer.geometry,
       });
-    } else {
+    } else if (isPlacedLabel(layer)) {
       features.push({
         type: "Feature",
         id: layer.id,

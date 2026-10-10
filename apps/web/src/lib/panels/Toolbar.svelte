@@ -18,6 +18,7 @@
     onSettings,
     onLocate,
     onShortcuts,
+    onSemantic,
   }: {
     controller: MapController | null;
     onExportImage: () => void;
@@ -28,6 +29,7 @@
     onSettings: () => void;
     onLocate: () => void;
     onShortcuts: () => void;
+    onSemantic: () => void;
   } = $props();
 
   let query = $state("");
@@ -106,6 +108,7 @@
         {t(key)}
       </Button>
     {/each}
+    <Button size="sm" variant="ghost" data-testid="tool-semantic" onclick={onSemantic}>{t("semantic")}</Button>
   </div>
   <form
     class="relative mx-1 hidden min-w-0 flex-1 md:block"

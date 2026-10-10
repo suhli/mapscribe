@@ -106,6 +106,14 @@ export function isLineLayer(layer: Layer): layer is LineLayer {
   return layer.type === "road-highlight" || layer.type === "freehand";
 }
 
+export function isDrawnLine(layer: Layer): layer is LineLayer & { geometry: LineGeometry } {
+  return isLineLayer(layer) && layer.geometry !== undefined;
+}
+
+export function isPlacedLabel(layer: Layer): layer is LabelLayer & { position: LngLat } {
+  return layer.type === "label" && layer.position !== undefined;
+}
+
 export function createRoadLayer(input: {
   name: string;
   geometry: LineGeometry;

@@ -14,7 +14,9 @@ export {
   lngLatSchema,
   mapProjectSchema,
   mapStyleSchema,
+  resolutionSchema,
   sourceInfoSchema,
+  sourceQuerySchema,
 } from "./schema.js";
 export type {
   BuiltinStyleName,
@@ -34,8 +36,10 @@ export type {
   PixelOffset,
   ProjectMeta,
   ProviderSettings,
+  ResolutionRecord,
   RoadLayer,
   SourceInfo,
+  SourceQuery,
 } from "./schema.js";
 export {
   createEmptyProject,
@@ -43,7 +47,9 @@ export {
   createLabelLayer,
   createRoadLayer,
   DEFAULT_CENTER,
+  isDrawnLine,
   isLineLayer,
+  isPlacedLabel,
   parseProject,
   projectToJson,
   stripSecrets,

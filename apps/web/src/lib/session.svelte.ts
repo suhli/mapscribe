@@ -25,6 +25,7 @@ class SessionBridge {
         project: JSON.parse(JSON.stringify(snapshot.project)),
         route: snapshot.route ? JSON.parse(JSON.stringify(snapshot.route)) : null,
         roadChoices: snapshot.roadChoices ? JSON.parse(JSON.stringify(snapshot.roadChoices)) : null,
+        linePreview: snapshot.linePreview ? JSON.parse(JSON.stringify(snapshot.linePreview)) : null,
       };
     });
   }

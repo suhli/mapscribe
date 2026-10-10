@@ -178,6 +178,126 @@ const layerIdSchema = z
   .string()
   .regex(/^[A-Za-z0-9_-]{1,64}$/, "图层 id 只能包含字母、数字、下划线和连字符，且不超过 64 个字符");
 
+const queryLocationSchema = z
+  .object({
+    city: z.string().min(1).max(80).optional(),
+    bounds: z.tuple([lng, lat, lng, lat]).optional(),
+  })
+  .strict()
+  .superRefine((value, ctx) => {
+    if (!value.bounds) return;
+    const [west, south, east, north] = value.bounds;
+    if (west >= east || south >= north) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["bounds"],
+        message: "范围要按西、南、东、北填写，并且西小于东、南小于北",
+      });
+    }
+  });
+
+const crsSchema = z.enum(["WGS84", "GCJ02", "BD09"]);
+
+const anchorSchema = z.discriminatedUnion("type", [
+  z
+    .object({
+      type: z.literal("coordinate"),
+      position: lngLatSchema,
+      crs: crsSchema.optional(),
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal("place"),
+      name: z.string().min(1).max(200),
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal("intersection"),
+      road: z.string().min(1).max(200),
+    })
+    .strict(),
+]);
+
+const queryFields = {
+  location: queryLocationSchema.optional(),
+  candidateId: z.string().min(1).max(160).optional(),
+};
+
+export const sourceQuerySchema = z.discriminatedUnion("type", [
+  z
+    .object({
+      type: z.literal("place"),
+      name: z.string().min(1).max(200),
+      precision: z.enum(["point", "area", "entrance"]).default("point"),
+      ...queryFields,
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal("road"),
+      road: z.string().min(1).max(200),
+      ...queryFields,
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal("intersection"),
+      roads: z.tuple([z.string().min(1).max(200), z.string().min(1).max(200)]),
+      ...queryFields,
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal("road-segment"),
+      road: z.string().min(1).max(200),
+      from: anchorSchema,
+      to: anchorSchema,
+      ...queryFields,
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal("nearby-roads"),
+      center: z.union([
+        z.object({ type: z.literal("place"), name: z.string().min(1).max(200) }).strict(),
+        z.object({ type: z.literal("coordinate"), position: lngLatSchema, crs: crsSchema.optional() }).strict(),
+        z
+          .object({
+            type: z.literal("intersection"),
+            roads: z.tuple([z.string().min(1).max(200), z.string().min(1).max(200)]),
+          })
+          .strict(),
+      ]),
+      radiusMeters: z.number().gt(0, "范围必须大于 0").lte(5000, "范围不能超过 5000 米").optional(),
+      mode: z.enum(["radius", "along-road"]).default("radius"),
+      ...queryFields,
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal("route"),
+      from: anchorSchema,
+      to: anchorSchema,
+      profile: z.enum(["driving"]).default("driving"),
+      ...queryFields,
+    })
+    .strict(),
+]);
+
+export const resolutionSchema = z
+  .object({
+    status: z.enum(["resolved", "ambiguous", "not_found", "provider_error", "invalid_query"]),
+    provider: z.string().max(120).optional(),
+    resolvedAt: z.string().max(40).optional(),
+    warnings: z.array(z.string().max(400)).max(20).default([]),
+    featureIds: z.array(z.string().max(160)).max(40).optional(),
+    precision: z.enum(["point", "area", "entrance", "road", "unknown"]).optional(),
+    candidateId: z.string().max(160).optional(),
+  })
+  .strict();
+
 const lineLayerFields = {
   id: layerIdSchema,
   name: z.string().max(200).default("未命名"),
@@ -188,12 +308,39 @@ const lineLayerFields = {
   source: sourceInfoSchema.optional(),
 };
 
-export const roadLayerSchema = z
+const roadLayerObject = z
   .object({
     type: z.literal("road-highlight"),
-    ...lineLayerFields,
+    id: layerIdSchema,
+    name: z.string().max(200).default("未命名"),
+    visible: z.boolean().default(true),
+    zIndex: z.number().int().gte(-1000).lte(1000).default(0),
+    style: lineStyleSchema,
+    geometry: lineGeometrySchema.optional(),
+    source: sourceInfoSchema.optional(),
+    sourceQuery: sourceQuerySchema.optional(),
+    resolution: resolutionSchema.optional(),
   })
   .strict();
+
+function refineRoadLayer(layer: z.infer<typeof roadLayerObject>, ctx: z.RefinementCtx): void {
+  if (!layer.geometry && !layer.sourceQuery) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["geometry"],
+      message: "道路高亮需要 geometry，或提供 sourceQuery 以便解析",
+    });
+  }
+  if (layer.sourceQuery && !["road", "road-segment", "nearby-roads", "route"].includes(layer.sourceQuery.type)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["sourceQuery"],
+      message: "道路高亮的 sourceQuery 只能是 road、road-segment、nearby-roads 或 route",
+    });
+  }
+}
+
+export const roadLayerSchema = roadLayerObject.superRefine(refineRoadLayer);
 
 export const freehandLayerSchema = z
   .object({
@@ -202,13 +349,13 @@ export const freehandLayerSchema = z
   })
   .strict();
 
-export const labelLayerSchema = z
+const labelLayerObject = z
   .object({
     id: layerIdSchema,
     type: z.literal("label"),
     name: z.string().max(200).default("标签"),
     text: z.string().min(1, "标签文字不能为空").max(500, "标签文字不能超过 500 个字符"),
-    position: lngLatSchema,
+    position: lngLatSchema.optional(),
     visible: z.boolean().default(true),
     zIndex: z.number().int().gte(-1000).lte(1000).default(0),
     icon: z.enum(["none", "pin", "star", "flag", "info"]).default("pin"),
@@ -216,14 +363,37 @@ export const labelLayerSchema = z
     leader: leaderSchema,
     offset: offsetSchema,
     placement: z.enum(["auto", "manual"]).default("auto"),
+    source: sourceInfoSchema.optional(),
+    sourceQuery: sourceQuerySchema.optional(),
+    resolution: resolutionSchema.optional(),
   })
   .strict();
 
-export const layerSchema = z.discriminatedUnion("type", [
-  roadLayerSchema,
-  freehandLayerSchema,
-  labelLayerSchema,
-]);
+function refineLabelLayer(layer: z.infer<typeof labelLayerObject>, ctx: z.RefinementCtx): void {
+  if (!layer.position && !layer.sourceQuery) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["position"],
+      message: "标签需要 position，或提供 sourceQuery 以便解析",
+    });
+  }
+  if (layer.sourceQuery && !["place", "intersection"].includes(layer.sourceQuery.type)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["sourceQuery"],
+      message: "标签的 sourceQuery 只能是 place 或 intersection",
+    });
+  }
+}
+
+export const labelLayerSchema = labelLayerObject.superRefine(refineLabelLayer);
+
+export const layerSchema = z
+  .discriminatedUnion("type", [roadLayerObject, freehandLayerSchema, labelLayerObject])
+  .superRefine((layer, ctx) => {
+    if (layer.type === "road-highlight") refineRoadLayer(layer, ctx);
+    if (layer.type === "label") refineLabelLayer(layer, ctx);
+  });
 
 const inlineStyleSchema = z
   .object({
@@ -356,6 +526,9 @@ export type LabelStyle = z.infer<typeof labelStyleShape>;
 export type LeaderStyle = z.infer<typeof leaderShape>;
 export type PixelOffset = z.infer<typeof offsetShape>;
 export type SourceInfo = z.infer<typeof sourceInfoSchema>;
+export type SourceQuery = z.infer<typeof sourceQuerySchema>;
+export type ResolutionRecord = z.infer<typeof resolutionSchema>;
+export type CoordinateReferenceSystem = z.infer<typeof crsSchema>;
 export type RoadLayer = z.infer<typeof roadLayerSchema>;
 export type FreehandLayer = z.infer<typeof freehandLayerSchema>;
 export type LabelLayer = z.infer<typeof labelLayerSchema>;

@@ -6,6 +6,7 @@ import {
 } from "@mapscribe/core";
 import { NominatimGeocoder, OsrmRoutingProvider, OverpassRoadProvider, parseCoordinateQuery, RoutingError, type RoadWay } from "@mapscribe/geo";
 import { editor } from "../session.svelte";
+import { resetSemanticResolver } from "./semantic";
 import { loadSettings } from "../settings";
 import { t } from "../preferences.svelte";
 import type { MapController, RenderedRoad } from "./map-controller";
@@ -19,6 +20,7 @@ export function resetProviders(): void {
   geocoder = null;
   roads = null;
   routing = null;
+  resetSemanticResolver();
 }
 
 function services() {

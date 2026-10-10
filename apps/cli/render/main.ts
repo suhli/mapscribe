@@ -3,7 +3,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import "@fontsource/noto-sans-sc/latin-400.css";
 import "@fontsource/noto-sans-sc/chinese-simplified-400.css";
 import "./style.css";
-import { parseProject, type LabelLayer, type MapProject } from "@mapscribe/core";
+import { parseProject, type LabelLayer, type LngLat, type MapProject } from "@mapscribe/core";
 import { boundsOfProject } from "@mapscribe/geo";
 import {
   applyOutputBackground,
@@ -117,7 +117,9 @@ async function renderProject(project: MapProject, warnings: string[]): Promise<v
     await whenMapReady(readyTarget);
     await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 
-    const labels = project.layers.filter((layer): layer is LabelLayer => layer.type === "label" && layer.visible);
+    const labels = project.layers.filter(
+      (layer): layer is LabelLayer & { position: LngLat } => layer.type === "label" && layer.visible && layer.position !== undefined,
+    );
     const sample = labels.map((label) => label.text).join("") || "中文";
     await document.fonts.load(labelFont(24), sample);
     await document.fonts.ready;

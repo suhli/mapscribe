@@ -4,6 +4,9 @@ export interface GeocodeResult {
   label: string;
   position: LngLat;
   bounds?: [number, number, number, number];
+  id?: string;
+  /** 数据里能看出的位置类型。没有入口信息时不会标成 entrance。 */
+  kind?: "poi" | "road" | "area" | "entrance" | "unknown";
 }
 
 /** 地名与坐标转换。 */
@@ -17,6 +20,10 @@ export interface RoadWay {
   name: string | null;
   highway: string | null;
   geometry: LineGeometry;
+  /** OSM layer 标签。缺省表示地面。 */
+  layer?: number;
+  bridge?: boolean;
+  tunnel?: boolean;
 }
 
 /**
@@ -26,6 +33,7 @@ export interface RoadWay {
 export interface RoadProvider {
   readonly id: string;
   waysNear(position: LngLat, radiusMeters?: number): Promise<RoadWay[]>;
+  waysByName(name: string, bounds: [number, number, number, number]): Promise<RoadWay[]>;
 }
 
 export interface RouteAlternative {

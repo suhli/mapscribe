@@ -2,7 +2,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { MAPSCRIBE_VERSION, parseProject, ProjectError, projectToJson, stripSecrets, type MapProject } from "@mapscribe/core";
 import { assertImageSize } from "@mapscribe/exporters";
-import { boundsOfProject } from "@mapscribe/geo";
+import { boundsOfProject, createDefaultResolver, projectNeedsResolution, resolveProject, type LayerResolutionReport } from "@mapscribe/geo";
 import { resolveStyle } from "@mapscribe/renderer";
 import type { Logger } from "../logger.js";
 import { printResult } from "../output.js";
@@ -31,8 +31,21 @@ export async function renderCommand(options: RenderOptions): Promise<number> {
       throw new ProjectError("项目文件不是合法 JSON");
     }
     const parsed = parseProject(data);
-    project = parsed.project;
+    const original = parsed.project;
+    project = original;
     for (const warning of parsed.warnings) options.logger.info(warning);
+    let reports: LayerResolutionReport[] = [];
+    if (projectNeedsResolution(original)) {
+      options.logger.info("项目包含未解析的 sourceQuery，开始地理解析");
+      const resolved = await resolveProject(original, createDefaultResolver(original));
+      reports = resolved.reports;
+      if (!resolved.ok) {
+        const error = new Error(reports.map((item) => `${item.id}: ${item.status} ${item.message}`).join("\n"));
+        (error as { reports?: LayerResolutionReport[] }).reports = reports;
+        throw error;
+      }
+      project = resolved.project;
+    }
     options.logger.info(`开始渲染 ${project.output.width}×${project.output.height} ${project.output.format}`);
     const rendered = await renderProjectInBrowser(project, {
       ...(options.noCache ? {} : { cacheDir: options.cacheDir ?? defaultCacheDir() }),
@@ -44,7 +57,7 @@ export async function renderCommand(options: RenderOptions): Promise<number> {
     const warnings = [...parsed.warnings, ...rendered.state.warnings];
     const elapsedMs = Date.now() - started;
     if (options.artifactDir) {
-      writeArtifact(options.artifactDir, project, outputPath, rendered.state, warnings, elapsedMs, true);
+      writeArtifact(options.artifactDir, original, project, reports, outputPath, rendered.state, warnings, elapsedMs, true);
     }
     printResult(
       {
@@ -74,6 +87,10 @@ export async function renderCommand(options: RenderOptions): Promise<number> {
       );
       writeFileSync(path.join(options.errorDir, "console.log"), message);
       if (project) writeFileSync(path.join(options.errorDir, "map.json"), projectToJson(stripSecrets(project)));
+      const reports = (error as { reports?: LayerResolutionReport[] }).reports;
+      if (reports) {
+        writeFileSync(path.join(options.errorDir, "resolve-report.json"), JSON.stringify({ ok: false, layers: reports }, null, 2));
+      }
     }
     printResult({ ok: false, command: "render", message }, options.json);
     return 1;
@@ -95,7 +112,9 @@ function extension(format: MapProject["output"]["format"]): string {
 
 function writeArtifact(
   directory: string,
+  original: MapProject,
   project: MapProject,
+  reports: LayerResolutionReport[],
   outputPath: string,
   state: { attribution: string[]; objects: Array<{ id: string; type: string }>; warnings: string[]; labelInkPixels: number; fontLoaded: boolean },
   warnings: string[],
@@ -104,7 +123,9 @@ function writeArtifact(
 ): void {
   mkdirSync(directory, { recursive: true });
   const safeProject = stripSecrets(project);
+  writeFileSync(path.join(directory, "map.source.json"), projectToJson(stripSecrets(original), { includeSecrets: false }));
   writeFileSync(path.join(directory, "map.json"), projectToJson(safeProject, { includeSecrets: false }));
+  writeFileSync(path.join(directory, "resolve-report.json"), JSON.stringify({ ok: true, layers: reports }, null, 2));
   const style = resolveStyle(project.map.style, project.map.attribution ?? []);
   const meta = {
     renderedAt: new Date().toISOString(),

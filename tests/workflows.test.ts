@@ -13,6 +13,10 @@ describe("github workflows", () => {
     expect(text).toContain("pnpm install");
     expect(text).not.toContain("deploy-pages");
     expect(text).toContain("cancel-in-progress: false");
+    const render = readFileSync(new URL("../apps/cli/src/commands/render.ts", import.meta.url), "utf8");
+    expect(render).toContain("resolve-report.json");
+    expect(render).toContain("map.source.json");
+    expect(render).toContain("resolveProject");
   });
 
   it("ci covers lint, types, tests, and builds", () => {

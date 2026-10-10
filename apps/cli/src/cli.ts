@@ -2,6 +2,7 @@ import { Command, CommanderError } from "commander";
 import { MAPSCRIBE_VERSION } from "@mapscribe/core";
 import { doctor } from "./commands/doctor.js";
 import { installBrowsers } from "./commands/install-browsers.js";
+import { parseSelections, resolveCommand } from "./commands/resolve.js";
 import { renderCommand } from "./commands/render.js";
 import { validateFile } from "./commands/validate.js";
 import { Logger, parseLogLevel } from "./logger.js";
@@ -33,6 +34,26 @@ export async function main(argv: string[]): Promise<number> {
         noCache: opts.cache === false,
         json,
         logger: new Logger(parseLogLevel(typeof opts.logLevel === "string" ? opts.logLevel : "info"), json),
+      });
+    });
+
+  program
+    .command("resolve")
+    .argument("<file>", "地图项目 JSON")
+    .option("-o, --output <file>", "解析后的项目 JSON")
+    .option("--force", "忽略已保存几何并重新解析")
+    .option("--select <pair>", "图层 id=候选 id，可重复", (value: string, previous: string[]) => previous.concat(value), [] as string[])
+    .option("--json", "输出机器可读 JSON")
+    .option("--log-level <level>", "silent、error、info 或 debug", "info")
+    .action(async (file: string, opts: { output?: string; force?: boolean; select?: string[]; json?: boolean; logLevel?: string }) => {
+      const json = Boolean(opts.json);
+      code = await resolveCommand({
+        file,
+        output: opts.output,
+        force: Boolean(opts.force),
+        selections: parseSelections(opts.select ?? []),
+        json,
+        logger: new Logger(parseLogLevel(opts.logLevel), json),
       });
     });
 

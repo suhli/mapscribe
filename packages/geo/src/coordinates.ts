@@ -1,5 +1,5 @@
 import type { Layer, LineGeometry, LngLat, MapProject } from "@mapscribe/core";
-import { isLineLayer } from "@mapscribe/core";
+import { isDrawnLine, isPlacedLabel } from "@mapscribe/core";
 
 export type BBox = [west: number, south: number, east: number, north: number];
 
@@ -104,8 +104,8 @@ export function boundsOfGeometry(geometry: LineGeometry): BBox | null {
 }
 
 export function boundsOfLayer(layer: Layer): BBox | null {
-  if (isLineLayer(layer)) return boundsOfGeometry(layer.geometry);
-  if (layer.type === "label") {
+  if (isDrawnLine(layer)) return boundsOfGeometry(layer.geometry);
+  if (isPlacedLabel(layer)) {
     return [layer.position[0], layer.position[1], layer.position[0], layer.position[1]];
   }
   return null;

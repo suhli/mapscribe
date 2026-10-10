@@ -1,4 +1,4 @@
-import { isLineLayer, type Layer, type LineGeometry, type LineStyle } from "@mapscribe/core";
+import { isDrawnLine, type Layer, type LineGeometry, type LineStyle } from "@mapscribe/core";
 
 export interface OverlaySource {
   id: string;
@@ -69,7 +69,7 @@ export function buildOverlay(layers: Layer[], selectedId: string | null, zoom: n
   const sources: OverlaySource[] = [];
   const overlayLayers: OverlayLayer[] = [];
   const visible = layers
-    .filter(isLineLayer)
+    .filter(isDrawnLine)
     .filter((layer) => layer.visible)
     .slice()
     .sort((a, b) => a.zIndex - b.zIndex);

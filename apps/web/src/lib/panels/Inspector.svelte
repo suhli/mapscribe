@@ -1,9 +1,27 @@
 <script lang="ts">
   import { isLineLayer } from "@mapscribe/core";
+  import type { ResolutionCandidate } from "@mapscribe/geo";
+  import { reresolveLayer } from "$lib/map/semantic";
   import { t } from "$lib/preferences.svelte";
   import { editor, session } from "$lib/session.svelte";
+  import Button from "$lib/components/ui/button.svelte";
 
   const layer = $derived(session.snapshot.project.layers.find((item) => item.id === session.snapshot.selection) ?? null);
+  let resolveMessage = $state("");
+  let resolveCandidates = $state<ResolutionCandidate[]>([]);
+
+  async function rerun(candidateId?: string): Promise<void> {
+    if (!layer || !("sourceQuery" in layer) || !layer.sourceQuery) return;
+    editor.setBusy(true);
+    try {
+      const outcome = await reresolveLayer(session.snapshot.project, layer, candidateId);
+      resolveMessage = [outcome.message, ...outcome.warnings].filter(Boolean).join(" ");
+      resolveCandidates = outcome.ok ? [] : outcome.candidates;
+      if (outcome.ok && outcome.layer) editor.replaceLayer(layer.id, outcome.layer);
+    } finally {
+      editor.setBusy(false);
+    }
+  }
 </script>
 
 <aside class="flex h-full flex-col bg-card">
@@ -19,6 +37,29 @@
         onchange={(event) => editor.setProjectName(event.currentTarget.value)}
       />
     </label>
+    {#if layer && "sourceQuery" in layer && layer.sourceQuery}
+      <div class="space-y-2 rounded-md border border-border p-2 text-xs text-muted-foreground">
+        <p>{t("semanticStatus")}: {layer.resolution?.status ?? layer.sourceQuery.type}</p>
+        {#if layer.resolution?.provider}
+          <p>{t("source")}: {layer.resolution.provider}{layer.resolution.resolvedAt ? ` / ${layer.resolution.resolvedAt}` : ""}</p>
+        {/if}
+        {#if layer.resolution?.precision}
+          <p>{layer.resolution.precision}</p>
+        {/if}
+        {#if layer.resolution?.warnings?.length}
+          <p>{layer.resolution.warnings.join(" ")}</p>
+        {/if}
+        {#if resolveMessage}
+          <p data-testid="resolve-message">{resolveMessage}</p>
+        {/if}
+        {#each resolveCandidates as candidate (candidate.id)}
+          <button type="button" class="block w-full rounded px-1 py-1 text-left hover:bg-accent" onclick={() => void rerun(candidate.id)}>
+            {candidate.name} · {candidate.reason}
+          </button>
+        {/each}
+        <Button size="sm" variant="outline" data-testid="reresolve" onclick={() => void rerun()}>{t("semanticReresolve")}</Button>
+      </div>
+    {/if}
     {#if layer && isLineLayer(layer)}
       <label class="grid gap-1 text-xs text-muted-foreground">
         {t("rename")}

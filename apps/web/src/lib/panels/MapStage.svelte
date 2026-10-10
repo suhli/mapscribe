@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { geometryLines, insertVertex, moveVertex } from "@mapscribe/geo";
-  import { isLineLayer, type LngLat } from "@mapscribe/core";
+  import { isDrawnLine, type LngLat } from "@mapscribe/core";
   import { labelFont, measureLabel, placeLabels, type PlacedLabel } from "@mapscribe/renderer";
   import { editor, session } from "$lib/session.svelte";
   import { handleDrawFinish, handleMapClick } from "$lib/map/interactions";
@@ -46,6 +46,7 @@
     const selection = session.snapshot.selection;
     const preview =
       session.snapshot.route?.alternatives[session.snapshot.route.selectedIndex]?.geometry ??
+      session.snapshot.linePreview ??
       session.snapshot.roadChoices?.[0]?.geometry ??
       null;
     controller?.sync(project, selection, preview);
@@ -61,7 +62,7 @@
       controller?.sync(
         current.project,
         current.selection,
-        current.route?.alternatives[current.route.selectedIndex]?.geometry ?? null,
+        current.route?.alternatives[current.route.selectedIndex]?.geometry ?? current.linePreview ?? null,
       );
     });
   });
@@ -111,7 +112,7 @@
 
   function selectedLine() {
     const layer = session.snapshot.project.layers.find((item) => item.id === session.snapshot.selection);
-    if (!layer || !isLineLayer(layer) || session.snapshot.tool !== "select") return null;
+    if (!layer || !isDrawnLine(layer) || session.snapshot.tool !== "select") return null;
     return layer;
   }
 

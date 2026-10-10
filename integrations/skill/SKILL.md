@@ -6,9 +6,12 @@
 
 根据一份地图项目 JSON：
 
-1. 校验配置。
-2. 选择 `local`、`github` 或 `auto`。
-3. 取得渲染出的图片和元数据。
+1. 把用户的地理描述写成 `sourceQuery`，不要猜测经纬度或编造道路几何。
+2. 需要时先运行 `mapscribe resolve`。本地和 GitHub Actions 使用同一个解析器；远程渲染会在出图前解析尚未完成的 `sourceQuery`。
+3. 检查解析状态。`ambiguous` 时向用户确认候选 id，再用 `--select 图层id=候选id`。失败或未消歧时不要渲染。
+4. 校验配置。
+5. 选择 `local`、`github` 或 `auto`。
+6. 取得渲染出的图片和元数据。
 
 `auto` 会先运行 `mapscribe doctor`。本地 Chromium 可用时走本地渲染。本地依赖缺失且 `MAPSCRIBE_GITHUB_TOKEN` 与 `MAPSCRIBE_GITHUB_REPOSITORY` 都存在时，才改走 GitHub Actions。本地渲染已经开始后如果失败，不会自动改跑远程。
 

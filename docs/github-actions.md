@@ -11,13 +11,15 @@
 ```text
 rendered-map/
 ├── map.png
+├── map.source.json
 ├── map.json
 ├── map.meta.json
+├── resolve-report.json
 ├── render-report.json
 └── summary.md
 ```
 
-失败时上传 `rendered-map-error`，里面有 `error-report.json`、`console.log` 和可能的 `debug.png`。页面底部的 Step Summary 会给出结果。每次运行使用自己的 concurrency group，不会取消别人的渲染。
+`map.source.json` 是解析前的项目，`map.json` 是写入真实几何之后的项目。`resolve-report.json` 记录每个 `sourceQuery` 的状态。已经保存且有效的几何不会在渲染时重新请求地理服务。解析失败或仍有歧义时，workflow 失败，并在 `rendered-map-error` 中附上 `resolve-report.json`、`error-report.json`、`console.log` 和可能的 `debug.png`。失败后不会用假坐标出图。页面底部的 Step Summary 会给出结果。每次运行使用自己的 concurrency group，不会取消别人的渲染。
 
 从 API 触发时请带上 `correlation_id`。workflow 的运行名是 `render <correlation_id>`。调用方应按这个名称查找 run id，而不是取最新一次运行。`integrations/skill/scripts/render.mjs` 已经这样做。
 
