@@ -1,4 +1,5 @@
-import { existsSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
+import path from "node:path";
 import { chromium } from "playwright";
 import { resolveRenderPageDir } from "../render/paths.js";
 import { printResult } from "../output.js";
@@ -21,6 +22,13 @@ export async function doctor(json: boolean): Promise<number> {
   try {
     const dir = resolveRenderPageDir();
     checks.push({ name: "render-page", ok: existsSync(dir), detail: dir });
+    const assets = path.join(dir, "assets");
+    const fontReady = existsSync(assets) && readdirSync(assets).some((name) => name.includes("noto-sans-sc-chinese-simplified"));
+    checks.push({
+      name: "font",
+      ok: fontReady,
+      detail: fontReady ? "渲染页包含 Noto Sans SC 简体字体" : "渲染页缺少中文字体，标签可能变成方框",
+    });
   } catch (error) {
     checks.push({
       name: "render-page",

@@ -127,6 +127,7 @@
   }
 
   function startVertex(event: PointerEvent, line: number, index: number): void {
+    if (event.button !== 0) return;
     event.stopPropagation();
     event.preventDefault();
     const layer = selectedLine();
@@ -180,7 +181,8 @@
   }
 </script>
 
-<div class="absolute inset-0" bind:this={container} data-testid="map-canvas"></div>
+<div class="absolute inset-0">
+<div class="h-full w-full" bind:this={container} data-testid="map-canvas"></div>
 <svg class="pointer-events-none absolute inset-0 z-10 overflow-visible">
   {#each placed as label (label.id)}
     {#if label.layer.leader.enabled}
@@ -245,3 +247,4 @@
     {/if}
   {/if}
 {/each}
+</div>

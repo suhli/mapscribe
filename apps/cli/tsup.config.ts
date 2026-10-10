@@ -22,5 +22,6 @@ export default defineConfig({
   sourcemap: true,
   banner: { js: "#!/usr/bin/env node" },
   external: ["playwright"],
+  noExternal: [/^@mapscribe\//],
   esbuildPlugins: [jsToTs],
 });

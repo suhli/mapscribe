@@ -15,6 +15,11 @@ import {
 
 export type Tool = "select" | "road" | "route" | "draw" | "label";
 
+/** 项目数据都是 JSON，用序列化复制可避开界面状态代理导致的 structuredClone 失败。 */
+function jsonClone<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
 export interface RoadChoice {
   id: string;
   name: string;
@@ -115,9 +120,9 @@ export class EditorStore {
 
   private capture(): HistoryState {
     return {
-      layers: structuredClone(this.project.layers),
-      style: structuredClone(this.project.map.style),
-      output: structuredClone(this.project.output),
+      layers: jsonClone(this.project.layers),
+      style: jsonClone(this.project.map.style),
+      output: jsonClone(this.project.output),
       selection: this.selection,
     };
   }
@@ -205,18 +210,22 @@ export class EditorStore {
   }
 
   undo(): void {
+    if (this.past.length === 0) return;
+    const current = this.capture();
     const previous = this.past.pop();
     if (!previous) return;
-    this.future.push(this.capture());
+    this.future.push(current);
     this.apply(previous);
     this.saved = false;
     this.emit();
   }
 
   redo(): void {
+    if (this.future.length === 0) return;
+    const current = this.capture();
     const next = this.future.pop();
     if (!next) return;
-    this.past.push(this.capture());
+    this.past.push(current);
     this.apply(next);
     this.saved = false;
     this.emit();
@@ -283,7 +292,7 @@ export class EditorStore {
   duplicateLayer(id: string): void {
     const source = this.project.layers.find((layer) => layer.id === id);
     if (!source) return;
-    const copy = structuredClone(source);
+    const copy = jsonClone(source);
     copy.id = createId(source.type === "label" ? "label" : source.type === "freehand" ? "draw" : "road");
     copy.name = `${source.name} 副本`;
     copy.zIndex = source.zIndex + 1;

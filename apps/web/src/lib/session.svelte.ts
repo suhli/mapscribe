@@ -19,7 +19,13 @@ class SessionBridge {
 
   constructor() {
     editor.subscribe(() => {
-      this.snapshot = editor.getSnapshot();
+      const snapshot = editor.getSnapshot();
+      this.snapshot = {
+        ...snapshot,
+        project: JSON.parse(JSON.stringify(snapshot.project)),
+        route: snapshot.route ? JSON.parse(JSON.stringify(snapshot.route)) : null,
+        roadChoices: snapshot.roadChoices ? JSON.parse(JSON.stringify(snapshot.roadChoices)) : null,
+      };
     });
   }
 }

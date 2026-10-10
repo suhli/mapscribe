@@ -191,8 +191,8 @@ function mapHandle(map: maplibregl.Map): MapHandle {
     getSource: (id) => {
       const source = map.getSource(id);
       if (source && "setData" in source && typeof source.setData === "function") {
-        const setData = source.setData as (data: never) => void;
-        return { setData: (data) => setData(data as never) };
+        const setData = source.setData as (this: unknown, data: never) => void;
+        return { setData: (data) => setData.call(source, data as never) };
       }
       return undefined;
     },
