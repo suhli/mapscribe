@@ -11,7 +11,9 @@
   let container = $state<HTMLDivElement | null>(null);
   let controller = $state<MapController | null>(null);
   let placed = $state<PlacedLabel[]>([]);
+  let handles = $state<Array<{ line: number; index: number; x: number; y: number; last: boolean }>>([]);
   let dragging: { id: string; origin: { x: number; y: number }; offset: { x: number; y: number } } | null = null;
+  let overlayFrame = 0;
 
   const measureCanvas = typeof document === "undefined" ? null : document.createElement("canvas").getContext("2d");
 
@@ -28,12 +30,13 @@
     });
     controller = map;
     onReady(map);
-    const refresh = () => layoutLabels();
+    const refresh = () => scheduleOverlay();
     map.map.on("move", refresh);
     map.map.on("resize", refresh);
     const observer = new ResizeObserver(() => map.resize());
     observer.observe(container);
     return () => {
+      if (overlayFrame) cancelAnimationFrame(overlayFrame);
       observer.disconnect();
       map.destroy();
       controller = null;
@@ -51,7 +54,7 @@
       null;
     controller?.sync(project, selection, preview);
     controller?.setDrawActive(session.snapshot.tool === "draw");
-    layoutLabels();
+    layoutOverlay();
   });
 
   $effect(() => {
@@ -66,6 +69,43 @@
       );
     });
   });
+
+  function scheduleOverlay(): void {
+    if (overlayFrame) return;
+    overlayFrame = requestAnimationFrame(() => {
+      overlayFrame = 0;
+      layoutOverlay();
+    });
+  }
+
+  function inView(point: { x: number; y: number }, width: number, height: number): boolean {
+    return point.x >= -48 && point.y >= -48 && point.x <= width + 48 && point.y <= height + 48;
+  }
+
+  function layoutOverlay(): void {
+    layoutLabels();
+    const layer = selectedLine();
+    if (!layer || !controller || !container) {
+      handles = [];
+      return;
+    }
+    const width = container.clientWidth;
+    const height = container.clientHeight;
+    const next: Array<{ line: number; index: number; x: number; y: number; last: boolean }> = [];
+    for (const [lineIndex, line] of geometryLines(layer.geometry).entries()) {
+      const projected = line.map((position) => controller?.project(position) ?? { x: 0, y: 0 });
+      projected.forEach((point, index) => {
+        const previous = projected[index - 1];
+        const following = projected[index + 1];
+        const nearSegment =
+          (previous && inView({ x: (previous.x + point.x) / 2, y: (previous.y + point.y) / 2 }, width, height)) ||
+          (following && inView({ x: (point.x + following.x) / 2, y: (point.y + following.y) / 2 }, width, height));
+        if (!inView(point, width, height) && !nearSegment) return;
+        next.push({ line: lineIndex, index, x: point.x, y: point.y, last: index >= line.length - 1 });
+      });
+    }
+    handles = next;
+  }
 
   function layoutLabels(): void {
     if (!controller || !measureCanvas) return;
@@ -114,17 +154,6 @@
     const layer = session.snapshot.project.layers.find((item) => item.id === session.snapshot.selection);
     if (!layer || !isDrawnLine(layer) || session.snapshot.tool !== "select") return null;
     return layer;
-  }
-
-  function vertices(): Array<{ line: number; index: number; position: LngLat; x: number; y: number }> {
-    const layer = selectedLine();
-    if (!layer || !controller) return [];
-    return geometryLines(layer.geometry).flatMap((line, lineIndex) =>
-      line.map((position, index) => {
-        const point = controller?.project(position) ?? { x: 0, y: 0 };
-        return { line: lineIndex, index, position, x: point.x, y: point.y };
-      }),
-    );
   }
 
   function startVertex(event: PointerEvent, line: number, index: number): void {
@@ -222,20 +251,21 @@
     {label.text}
   </button>
 {/each}
-{#each vertices() as vertex (`${vertex.line}-${vertex.index}`)}
+{#each handles as vertex (`${vertex.line}-${vertex.index}`)}
   <button
     type="button"
     class="absolute z-30 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-primary shadow"
     style:left="{vertex.x}px"
     style:top="{vertex.y}px"
     aria-label="顶点"
+    data-testid="vertex-handle"
     onpointerdown={(event) => startVertex(event, vertex.line, vertex.index)}
     oncontextmenu={(event) => removeVertex(event, vertex.line, vertex.index)}
   ></button>
 {/each}
-{#each vertices() as vertex (`mid-${vertex.line}-${vertex.index}`)}
-  {#if vertex.index < vertices().filter((item) => item.line === vertex.line).length - 1}
-    {@const next = vertices().find((item) => item.line === vertex.line && item.index === vertex.index + 1)}
+{#each handles as vertex (`mid-${vertex.line}-${vertex.index}`)}
+  {#if !vertex.last}
+    {@const next = handles.find((item) => item.line === vertex.line && item.index === vertex.index + 1)}
     {#if next}
       <button
         type="button"

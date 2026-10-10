@@ -25,7 +25,7 @@ export { RateLimiter } from "./rate-limit.js";
 export { TILE_STYLES, findTileStyle } from "./tiles.js";
 export { createDefaultResolver, createOsmCatalog, projectNeedsResolution, resolveProject } from "./resolve-project.js";
 export type { LayerResolutionReport, ProjectResolution } from "./resolve-project.js";
-export { AmbiguousScopeError, createGeoResolver } from "./resolver.js";
+export { AMBIGUOUS_SCOPE_REASON, AmbiguousScopeError, chooseAreaBounds, createGeoResolver } from "./resolver.js";
 export type {
   AnchorQuery,
   GeoCatalog,

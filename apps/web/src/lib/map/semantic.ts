@@ -36,6 +36,7 @@ export interface SemanticRequest {
   nearbyMode: "radius" | "along-road";
   entrance: boolean;
   candidateId?: string;
+  bounds?: [number, number, number, number];
 }
 
 export interface SemanticOutcome {
@@ -82,7 +83,13 @@ function editorResolver(): GeoResolver {
 
 export function buildSourceQuery(request: SemanticRequest): { ok: true; query: SourceQuery } | { ok: false; error: string } {
   const city = request.city.trim();
-  const location = city ? { city } : undefined;
+  const location =
+    city || request.bounds
+      ? {
+          ...(city ? { city } : {}),
+          ...(request.bounds ? { bounds: request.bounds } : {}),
+        }
+      : undefined;
   const primary = request.primary.trim();
   const secondary = request.secondary.trim();
   const fromRoad = request.fromRoad.trim();

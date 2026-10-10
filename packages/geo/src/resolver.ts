@@ -23,6 +23,7 @@ export type ResolutionStatus = "resolved" | "ambiguous" | "not_found" | "provide
 export interface LocationScope {
   city?: string;
   bounds?: [number, number, number, number];
+  areaId?: string;
 }
 
 export interface ResolutionCandidate {
@@ -128,6 +129,24 @@ export interface GeoCatalog {
 
 const DEFAULT_RADIUS_METERS = 100;
 const SNAP_METERS = 45;
+
+export const AMBIGUOUS_SCOPE_REASON = "搜索范围存在多个匹配";
+
+export function chooseAreaBounds(
+  hits: GeocodeResult[],
+  areaId?: string,
+): { bounds: [number, number, number, number] } | { ambiguous: GeocodeResult[] } | null {
+  const areas = hits.filter((hit) => hit.kind === "area" && hit.bounds);
+  const pool = areas.length > 0 ? areas : hits.filter((hit) => hit.bounds);
+  if (areaId) {
+    const chosen = pool.find((hit) => (hit.id ?? hit.label) === areaId);
+    if (chosen?.bounds) return { bounds: chosen.bounds };
+  }
+  const first = pool[0];
+  if (!first?.bounds) return null;
+  if (pool.length > 1) return { ambiguous: pool };
+  return { bounds: first.bounds };
+}
 
 export class AmbiguousScopeError extends Error {
   readonly hits: GeocodeResult[];
@@ -528,7 +547,7 @@ function failure<T>(error: unknown): ResolutionResult<T> {
         ...(hit.bounds ? { bounds: hit.bounds } : {}),
         provider: "geocoder",
         ...(hit.id ? { featureId: hit.id } : {}),
-        reason: "搜索范围存在多个匹配",
+        reason: AMBIGUOUS_SCOPE_REASON,
       })),
     };
   }

@@ -3,7 +3,7 @@ import { createEmptyProject, parseProject } from "@mapscribe/core";
 import { gcj02ToWgs84, wgs84ToGcj02 } from "./crs.js";
 import { haversineMeters } from "./coordinates.js";
 import { resolveProject } from "./resolve-project.js";
-import { createGeoResolver, type GeoCatalog, type ResolutionResult } from "./resolver.js";
+import { chooseAreaBounds, createGeoResolver, type GeoCatalog, type ResolutionResult } from "./resolver.js";
 import { ProviderRequestError, type GeocodeResult, type RoadWay, type RouteAlternative } from "./types.js";
 
 const scope = { city: "测试市", bounds: [104, 30.6, 104.3, 30.9] as [number, number, number, number] };
@@ -233,6 +233,27 @@ describe("GeoResolver", () => {
     const first = await resolver.resolveIntersection(query);
     const second = await resolver.resolveIntersection(query);
     expect(second).toEqual(first);
+  });
+
+  it("同名城市不会自动挑选，选中其中一个后使用它的范围", () => {
+    const hits: GeocodeResult[] = [
+      {
+        id: "relation/1",
+        label: "广州市，广东省，中国",
+        position: [113.26, 23.13],
+        bounds: [112.9, 22.5, 113.7, 23.9],
+        kind: "area",
+      },
+      {
+        id: "relation/2",
+        label: "廣州市，京畿道，韩国",
+        position: [127.02, 37.26],
+        bounds: [126.6, 37.1, 127.5, 37.5],
+        kind: "area",
+      },
+    ];
+    expect(chooseAreaBounds(hits)).toEqual({ ambiguous: hits });
+    expect(chooseAreaBounds(hits, "relation/1")).toEqual({ bounds: [112.9, 22.5, 113.7, 23.9] });
   });
 
   it("GCJ-02 与 WGS84 可以来回转换，中国范围外保持不变", () => {

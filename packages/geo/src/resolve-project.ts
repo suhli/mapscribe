@@ -13,6 +13,7 @@ import { OsrmRoutingProvider } from "./osrm.js";
 import { OverpassRoadProvider } from "./overpass.js";
 import {
   AmbiguousScopeError,
+  chooseAreaBounds,
   createGeoResolver,
   type AnchorQuery,
   type GeoCatalog,
@@ -132,7 +133,7 @@ export function createOsmCatalog(providers: {
       return providers.geocoder.search(text);
     },
     async searchRoads(name, scope) {
-      const bounds = scope?.bounds ?? (await cityBounds(providers.geocoder, scope?.city));
+      const bounds = scope?.bounds ?? (await cityBounds(providers.geocoder, scope?.city, scope?.areaId));
       if (!bounds) return [];
       return providers.roads.waysByName(name, bounds);
     },
@@ -145,15 +146,16 @@ export function createOsmCatalog(providers: {
   };
 }
 
-async function cityBounds(geocoder: NominatimGeocoder, city: string | undefined): Promise<[number, number, number, number] | null> {
+async function cityBounds(
+  geocoder: NominatimGeocoder,
+  city: string | undefined,
+  areaId?: string,
+): Promise<[number, number, number, number] | null> {
   if (!city) return null;
-  const hits = await geocoder.search(city);
-  const areas = hits.filter((hit) => hit.kind === "area" && hit.bounds);
-  const pool = areas.length > 0 ? areas : hits.filter((hit) => hit.bounds);
-  const first = pool[0];
-  if (!first?.bounds) return null;
-  if (pool.length > 1) throw new AmbiguousScopeError(pool);
-  return first.bounds;
+  const choice = chooseAreaBounds(await geocoder.search(city), areaId);
+  if (!choice) return null;
+  if ("ambiguous" in choice) throw new AmbiguousScopeError(choice.ambiguous);
+  return choice.bounds;
 }
 
 function withSelection(query: SourceQuery, candidateId: string | undefined): SourceQuery {

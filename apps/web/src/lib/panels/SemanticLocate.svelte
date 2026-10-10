@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { LineGeometry } from "@mapscribe/core";
+  import { AMBIGUOUS_SCOPE_REASON, type ResolutionCandidate } from "@mapscribe/geo";
   import Button from "$lib/components/ui/button.svelte";
   import Dialog from "$lib/components/ui/dialog.svelte";
   import type { MapController } from "$lib/map/map-controller";
@@ -35,7 +36,7 @@
     else if (result.focus) controller?.focus(result.focus, 16);
   }
 
-  async function search(candidateId?: string): Promise<void> {
+  async function search(selection?: { candidateId?: string; bounds?: [number, number, number, number] }): Promise<void> {
     busy = true;
     editor.setBusy(true);
     try {
@@ -50,13 +51,22 @@
         nearbyMode,
         entrance,
         ...(Number.isFinite(radiusMeters) && radiusMeters > 0 ? { radiusMeters } : {}),
-        ...(candidateId ? { candidateId } : {}),
+        ...(selection?.candidateId ? { candidateId: selection.candidateId } : {}),
+        ...(selection?.bounds ? { bounds: selection.bounds } : {}),
       });
       show(result);
     } finally {
       busy = false;
       editor.setBusy(false);
     }
+  }
+
+  function chooseCandidate(candidate: ResolutionCandidate): void {
+    if (candidate.bounds && candidate.reason === AMBIGUOUS_SCOPE_REASON) {
+      void search({ bounds: candidate.bounds });
+      return;
+    }
+    void search({ candidateId: candidate.id });
   }
 
   function apply(): void {
@@ -145,8 +155,10 @@
           {#each outcome.candidates as candidate (candidate.id)}
             <button
               type="button"
-              class="block w-full rounded-md px-2 py-1 text-left text-xs hover:bg-accent"
-              onclick={() => void search(candidate.id)}
+              class="block w-full cursor-pointer rounded-md px-2 py-1 text-left text-xs hover:bg-accent"
+              data-testid="semantic-candidate"
+              disabled={busy}
+              onclick={() => chooseCandidate(candidate)}
             >
               {candidate.name}{candidate.area ? ` · ${candidate.area}` : ""} · {candidate.reason}
             </button>
