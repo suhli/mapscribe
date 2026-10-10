@@ -1,0 +1,9 @@
+{
+  "schemaVersion": "1.0",
+  "map": {
+    "center": [200, 30],
+    "zoom": 12,
+    "style": "light"
+  },
+  "layers": []
+}

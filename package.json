@@ -1,0 +1,35 @@
+{
+  "name": "mapscribe",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "开源地图编辑与渲染工具",
+  "packageManager": "pnpm@10.34.6",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @mapscribe/web dev",
+    "build": "pnpm --filter @mapscribe/cli build && pnpm --filter @mapscribe/web build",
+    "build:cli": "pnpm --filter @mapscribe/cli build",
+    "build:web": "pnpm --filter @mapscribe/web build",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "lint": "eslint .",
+    "test": "pnpm --filter @mapscribe/cli build:page && vitest run",
+    "test:unit": "vitest run --exclude tests/render.integration.test.ts",
+    "test:e2e": "pnpm --filter @mapscribe/web build && playwright test",
+    "mapscribe": "tsx apps/cli/src/index.ts"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.36.0",
+    "@playwright/test": "^1.56.1",
+    "@types/pngjs": "^6.0.5",
+    "eslint": "^9.36.0",
+    "fflate": "^0.8.2",
+    "pngjs": "^7.0.0",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2",
+    "typescript-eslint": "^8.44.0",
+    "vitest": "^3.2.4"
+  }
+}

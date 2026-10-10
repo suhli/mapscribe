@@ -1,0 +1,101 @@
+name: Render map
+
+run-name: render ${{ inputs.correlation_id || github.run_id }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      project_json:
+        description: Map project JSON. Use project_path when the file is large.
+        required: false
+        type: string
+      project_path:
+        description: Path inside the repository to a project JSON file.
+        required: false
+        type: string
+      artifact_name:
+        description: Artifact name
+        required: false
+        default: rendered-map
+        type: string
+      correlation_id:
+        description: Caller-supplied id. The run name becomes "render <id>".
+        required: false
+        type: string
+  workflow_call:
+    inputs:
+      project_json:
+        type: string
+        required: false
+      project_path:
+        type: string
+        required: false
+      artifact_name:
+        type: string
+        required: false
+        default: rendered-map
+      correlation_id:
+        type: string
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: render-${{ github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Build CLI and render page
+        run: pnpm --filter @mapscribe/cli build
+      - name: Read project JSON
+        env:
+          PROJECT_JSON: ${{ inputs.project_json }}
+          PROJECT_PATH: ${{ inputs.project_path }}
+        run: node scripts/prepare-render-input.mjs
+      - name: Render
+        run: node apps/cli/dist/index.js render tmp/project.json --artifact-dir rendered-map --error-dir rendered-map-error --log-level info
+      - name: Write job summary
+        if: always()
+        shell: bash
+        run: |
+          if [ -f rendered-map/summary.md ]; then
+            cat rendered-map/summary.md >> "$GITHUB_STEP_SUMMARY"
+          elif [ -f rendered-map-error/error-report.json ]; then
+            echo "## MapScribe 渲染失败" >> "$GITHUB_STEP_SUMMARY"
+            echo "请下载失败 artifact 查看 error-report.json、console.log 和 debug.png。" >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Upload rendered map
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.artifact_name || 'rendered-map' }}
+          path: rendered-map
+          if-no-files-found: error
+      - name: Upload failure report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.artifact_name || 'rendered-map' }}-error
+          path: rendered-map-error
+          if-no-files-found: warn

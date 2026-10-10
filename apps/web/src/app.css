@@ -1,0 +1,83 @@
+@import "tailwindcss";
+@import "@fontsource/noto-sans-sc/latin-400.css";
+@import "@fontsource/noto-sans-sc/chinese-simplified-400.css";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-destructive: var(--destructive);
+  --color-ring: var(--ring);
+  --radius-lg: 0.7rem;
+  --radius-md: 0.5rem;
+}
+
+:root {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --primary: #1d4ed8;
+  --primary-foreground: #ffffff;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --border: #e2e8f0;
+  --accent: #eff6ff;
+  --destructive: #dc2626;
+  --ring: #2563eb;
+  color-scheme: light;
+}
+
+.dark {
+  --background: #0b1120;
+  --foreground: #e2e8f0;
+  --card: #111827;
+  --card-foreground: #e2e8f0;
+  --primary: #60a5fa;
+  --primary-foreground: #0b1120;
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+  --border: #243044;
+  --accent: #172554;
+  --destructive: #f87171;
+  --ring: #60a5fa;
+  color-scheme: dark;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: "Noto Sans SC", "Segoe UI", sans-serif;
+  background: var(--background);
+  color: var(--foreground);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+.maplibregl-ctrl-attrib,
+.maplibregl-ctrl-scale {
+  font-family: "Noto Sans SC", sans-serif;
+}
+
+.maplibregl-map {
+  font-family: inherit;
+}

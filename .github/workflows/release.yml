@@ -1,0 +1,40 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build
+        run: pnpm build
+      - name: Pack artifacts
+        shell: bash
+        run: |
+          mkdir -p release
+          tar -C apps/web -czf release/mapscribe-web.tar.gz dist
+          tar -C apps/cli -czf release/mapscribe-cli.tar.gz dist package.json
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          gh release create "$GITHUB_REF_NAME" release/mapscribe-web.tar.gz release/mapscribe-cli.tar.gz \
+            --title "$GITHUB_REF_NAME" \
+            --notes "Web 静态文件在 mapscribe-web.tar.gz。CLI 在 mapscribe-cli.tar.gz，解压后运行 node dist/index.js。首次使用请执行 node dist/index.js install，它只安装 Playwright Chromium。"

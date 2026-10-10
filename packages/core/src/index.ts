@@ -1,0 +1,53 @@
+export { MAPSCRIBE_VERSION, SCHEMA_VERSION, SUPPORTED_SCHEMA_VERSIONS } from "./version.js";
+export { ProjectError, formatZodError } from "./errors.js";
+export { createId } from "./ids.js";
+export {
+  builtinStyleNames,
+  defaultLabelStyle,
+  defaultLeader,
+  defaultLineStyle,
+  defaultOffset,
+  defaultOutput,
+  labelLayerSchema,
+  layerSchema,
+  lineGeometrySchema,
+  lngLatSchema,
+  mapProjectSchema,
+  mapStyleSchema,
+  sourceInfoSchema,
+} from "./schema.js";
+export type {
+  BuiltinStyleName,
+  FreehandLayer,
+  LabelLayer,
+  LabelStyle,
+  Layer,
+  LeaderStyle,
+  LineGeometry,
+  LineLayer,
+  LineStyle,
+  LngLat,
+  MapProject,
+  MapStyle,
+  MapView,
+  OutputOptions,
+  PixelOffset,
+  ProjectMeta,
+  ProviderSettings,
+  RoadLayer,
+  SourceInfo,
+} from "./schema.js";
+export {
+  createEmptyProject,
+  createFreehandLayer,
+  createLabelLayer,
+  createRoadLayer,
+  DEFAULT_CENTER,
+  isLineLayer,
+  parseProject,
+  projectToJson,
+  stripSecrets,
+  styleName,
+  touchProject,
+} from "./project.js";
+export type { ParseResult } from "./project.js";

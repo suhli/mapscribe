@@ -1,0 +1,14 @@
+import { defineConfig } from "vitest/config";
+
+export default defineConfig({
+  test: {
+    include: ["packages/**/*.test.ts", "apps/**/*.test.ts", "tests/**/*.test.ts"],
+    testTimeout: 120_000,
+    hookTimeout: 120_000,
+    server: {
+      deps: {
+        external: ["playwright"],
+      },
+    },
+  },
+});

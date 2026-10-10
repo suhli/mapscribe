@@ -1,0 +1,34 @@
+{
+  "name": "@mapscribe/cli",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "mapscribe": "./dist/index.js"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./render": "./src/render/run.ts"
+  },
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "build:page": "vite build",
+    "build": "tsup && vite build",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@fontsource/noto-sans-sc": "^5.2.6",
+    "@mapscribe/core": "workspace:*",
+    "@mapscribe/exporters": "workspace:*",
+    "@mapscribe/geo": "workspace:*",
+    "@mapscribe/renderer": "workspace:*",
+    "commander": "^12.1.0",
+    "maplibre-gl": "5.6.1",
+    "playwright": "^1.56.1"
+  },
+  "devDependencies": {
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.2",
+    "vite": "^6.3.6"
+  }
+}

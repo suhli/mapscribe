@@ -1,0 +1,81 @@
+{
+  "schemaVersion": "1.0",
+  "meta": {
+    "id": "map-chengdu-xili",
+    "name": "成都西里",
+    "createdAt": "2026-10-09T00:00:00.000Z",
+    "updatedAt": "2026-10-09T00:00:00.000Z"
+  },
+  "map": {
+    "center": [104.0809, 30.657],
+    "zoom": 17,
+    "bearing": 0,
+    "pitch": 0,
+    "style": "light",
+    "attribution": ["道路几何来自 OpenStreetMap way/625875294"]
+  },
+  "layers": [
+    {
+      "id": "road-xili",
+      "type": "road-highlight",
+      "name": "西里",
+      "visible": true,
+      "zIndex": 0,
+      "style": {
+        "color": "#ef4444",
+        "width": 8,
+        "opacity": 1,
+        "dash": "solid",
+        "lineCap": "round",
+        "lineJoin": "round",
+        "outlineColor": "#ffffff",
+        "outlineWidth": 2,
+        "widthMode": "screen"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [104.0802545, 30.6561263],
+          [104.080481, 30.6564912],
+          [104.0807212, 30.6568853],
+          [104.0806434, 30.6569476],
+          [104.0808101, 30.6571956],
+          [104.08095, 30.6571344],
+          [104.0810688, 30.6573258],
+          [104.0811831, 30.6572795],
+          [104.0815401, 30.6578224]
+        ]
+      },
+      "source": {
+        "kind": "road",
+        "provider": "overpass",
+        "featureId": "way/625875294",
+        "name": "西里",
+        "fetchedAt": "2026-10-09T09:00:00.000Z",
+        "query": { "around": "30.6571,104.0812", "radius": 40 }
+      }
+    },
+    {
+      "id": "label-xili",
+      "type": "label",
+      "name": "西里",
+      "text": "西里",
+      "position": [104.08095, 30.65713],
+      "visible": true,
+      "zIndex": 1,
+      "icon": "pin",
+      "placement": "manual",
+      "offset": { "x": 12, "y": -28 }
+    }
+  ],
+  "output": {
+    "format": "png",
+    "width": 1600,
+    "height": 900,
+    "pixelRatio": 1,
+    "background": "#ffffff",
+    "fit": "content",
+    "padding": 80,
+    "quality": 0.92
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "schemaVersion": "1.0",
+  "meta": {
+    "id": "map-render-fixture",
+    "name": "渲染测试",
+    "createdAt": "2026-10-09T00:00:00.000Z",
+    "updatedAt": "2026-10-09T00:00:00.000Z"
+  },
+  "map": {
+    "center": [104.085, 30.655],
+    "zoom": 14,
+    "style": "blank",
+    "attribution": ["MapScribe fixture"]
+  },
+  "layers": [
+    {
+      "id": "road-1",
+      "type": "road-highlight",
+      "name": "测试路段",
+      "visible": true,
+      "style": {
+        "color": "#ef4444",
+        "width": 14,
+        "opacity": 1,
+        "widthMode": "screen",
+        "outlineWidth": 0
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [104.08, 30.65],
+          [104.09, 30.66]
+        ]
+      },
+      "source": { "kind": "freehand" }
+    },
+    {
+      "id": "label-1",
+      "type": "label",
+      "name": "示例地点",
+      "text": "示例地点",
+      "position": [104.085, 30.655],
+      "style": {
+        "fontSize": 28,
+        "color": "#111827",
+        "background": "#ffffff"
+      }
+    }
+  ],
+  "output": {
+    "format": "png",
+    "width": 800,
+    "height": 450,
+    "pixelRatio": 1,
+    "fit": "content",
+    "padding": 48
+  }
+}
